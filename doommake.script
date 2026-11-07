@@ -1,0 +1,754 @@
+/****************************************************************************
+ * DoomMake Build Script
+ *
+ * DoomMake employs a language called RookScript.
+ * Documentation is included for this in the DoomTools docs folder.
+ * All WadScript and DoomMake extensions are available here. 
+ ****************************************************************************/
+
+#include "scripts/doommake-lib.script"
+#include "scripts/doommake-init.script"
+
+/* ------------------------------------------------------------------------ */
+
+function listUncleanedFiles(dir) {
+	each (f : filelist(file(dir), true)) {
+		printerrln("* " + filepath(f));
+	}
+}
+
+/**
+ * Cleans the build directory and distro directory found in the properties.
+ */
+function doClean() {
+	initBuild();
+	println("Cleaning build and dist...");
+	out = cleandir(getBuildDirectory()) && cleandir(getDistDirectory());	
+	println("Done.");
+	if (!out) {
+	    printerrln("ERROR: Clean failed - the following files were not deleted:");
+	    listUncleanedFiles(getBuildDirectory());
+	    listUncleanedFiles(getDistDirectory());
+	}
+		
+	return out; 
+}
+
+
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Builds the editor assets WAD file in the build directory.
+ */
+function doEditorAssets() {
+
+	editorWad = getBuildDirectory() + "/" + getEditorWAD();
+
+	if (checkFileExistenceAndBuildStatuses(editorWad, ["dehacked", "assets", "textures"])) {
+		println("[Skipped] Assets, textures, and DeHackEd patches were not built. Skipping editor WAD rebuild.");
+		return;
+	}
+	
+	mergeEditorAssets(editorWad);
+
+	setBuilt("editor");
+}
+
+
+/* ------------------------------------------------------------------------ */
+
+#define SRC_DIR_CONVERT    "/convert" 
+
+/**
+ * Converts palette assets in the conversion directories.
+ * Puts them in the build conversion folder.
+ */
+check function doConvertPalettes() {
+	
+	initBuild();
+	
+	sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/palettes";
+	targetDir = getBuildDirectory() + SRC_DIR_CONVERT + "/palettes";
+	verifydirs(sourceDir);
+	verifydirs(targetDir);
+	
+	hash = directoryHasChanged(sourceDir);
+	if (hash === null) {
+		println("[Skipped] Palette conversion directory (" + sourceDir + ") up to date.");
+		return;
+	}
+
+	println("Cleaning " + targetDir + "..."); 
+	cleandir(targetDir);
+			
+	println("Converting palettes...");
+	
+	convertimg(sourceDir, targetDir, "palettes");
+
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("convert-palettes");
+	println("Palettes converted from `" + sourceDir + "` to `" + targetDir + "`.");
+}
+
+/**
+ * Converts sound assets in the conversion directories.
+ * Puts them in the build conversion folder.
+ */
+check function doConvertSounds() {
+	
+	initBuild();
+
+	sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/sounds";
+	targetDir = getBuildDirectory() + SRC_DIR_CONVERT + "/sounds";
+	verifydirs(sourceDir);
+	verifydirs(targetDir);
+		
+	hash = directoryHasChanged(sourceDir);
+	if (hash === null) {
+		println("[Skipped] Sound conversion directory (" + sourceDir + ") up to date.");
+		return;
+	}
+
+	println("Cleaning " + targetDir + "..."); 
+	cleandir(targetDir);
+			
+	println("Converting sounds...");
+	
+	convertdmx(sourceDir, targetDir);
+
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("convert-sound");
+	println("Sounds converted from `" + sourceDir + "` to `" + targetDir + "`.");
+}
+
+/**
+ * Converts graphics assets in the conversion directories.
+ * Puts them in the build conversion folder.
+ */
+check function doConvertGraphics() {
+	
+	initBuild();
+
+	sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/graphics";
+	targetDir = getBuildDirectory() + SRC_DIR_CONVERT + "/graphics";
+	verifydirs(sourceDir);
+	verifydirs(targetDir);
+			
+	hash = directoryHasChanged(sourceDir);
+	if (hash === null) {
+		println("[Skipped] Graphic conversion directory (" + sourceDir + ") up to date.");
+		return;
+	}
+
+	println("Cleaning " + targetDir + "..."); 
+	cleandir(targetDir);
+			
+	println("Converting graphics...");
+	
+	convertimg(sourceDir, targetDir, "graphics");
+
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("convert-graphics");
+	println("Graphics converted from `" + sourceDir + "` to `" + targetDir + "`.");
+}
+
+/**
+ * Converts sprite assets in the conversion directories.
+ * Puts them in the build conversion folder.
+ */
+check function doConvertSprites() {
+	
+	initBuild();
+
+	sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/sprites";
+	targetDir = getBuildDirectory() + SRC_DIR_CONVERT + "/sprites";
+	verifydirs(sourceDir);
+	verifydirs(targetDir);
+			
+	hash = directoryHasChanged(sourceDir);
+	if (hash === null) {
+		println("[Skipped] Sprite conversion directory (" + sourceDir + ") up to date.");
+		return;
+	}
+
+	println("Cleaning " + targetDir + "..."); 
+	cleandir(targetDir);
+			
+	println("Converting sprites...");
+	
+	convertimg(sourceDir, targetDir, "graphics");
+
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("convert-sprites");
+	println("Sprites converted from `" + sourceDir + "` to `" + targetDir + "`.");
+}
+
+/**
+ * Converts the primary colormap assets in the conversion directories.
+ * Puts them in the build conversion folder.
+ */
+check function doConvertPrimaryColormaps() {
+
+	sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/colormaps";
+	targetDir = getBuildDirectory() + SRC_DIR_CONVERT + "/colormaps";
+	verifydirs(sourceDir);
+	verifydirs(targetDir);
+
+	hash = directoryHasChanged(sourceDir);
+	if (hash === null) {
+		println("[Skipped] Primary colormap conversion directory (" + sourceDir + ") up to date.");
+		return;
+	}
+
+	println("Cleaning " + targetDir + "..."); 
+	cleandir(targetDir);
+			
+	println("Converting primary colormaps...");
+	
+	convertimg(sourceDir, targetDir, "colormaps");
+
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("convert-colormaps");
+	println("Primary Colormaps converted from `" + sourceDir + "` to `" + targetDir + "`.");
+}
+
+/**
+ * Converts the secondary colormap assets in the conversion directories.
+ * Puts them in the build conversion folder.
+ */
+check function doConvertSecondaryColormaps() {
+
+	sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/colormaps-secondary";
+	targetDir = getBuildDirectory() + SRC_DIR_CONVERT + "/colormaps-secondary";
+	verifydirs(sourceDir);
+	verifydirs(targetDir);
+			
+	hash = directoryHasChanged(sourceDir);
+	if (hash === null) {
+		println("[Skipped] Colormap conversion directory (" + sourceDir + ") up to date.");
+		return;
+	}
+
+	println("Cleaning " + targetDir + "..."); 
+	cleandir(targetDir);
+			
+	println("Converting colormaps...");
+	
+	convertimg(sourceDir, targetDir, "colormaps");
+
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("convert-colormaps-secondary");
+	println("Colormaps converted from `" + sourceDir + "` to `" + targetDir + "`.");
+}
+
+
+/**
+ * Converts colormap assets in the conversion directories.
+ * Puts them in the build conversion folder.
+ */
+check function doConvertColormaps() {
+	initBuild();
+	doConvertPrimaryColormaps();
+	doConvertSecondaryColormaps();
+}
+
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Creates primary palettes and colormaps from primary IWAD if they do not exist.
+ */
+function doRebuildPalettes() {
+	
+	initBuild();
+	
+	baseIwadPath = getIwad();
+	if (empty(baseIwadPath))
+		return error("NoIWAD", "An IWAD for this project was not set in properties: " + PROP_IWADPATH);
+	
+	println("Using IWAD: " + baseIwadPath);
+	
+	paletteEntries = [];
+	colormapEntries = [];
+	
+	check (err) {
+		iwad = wadfile(baseIwadPath);
+
+		// Palettes
+		iwad->wadEntryAddIfFound(
+			["PLAYPAL", "E2PAL"],
+			paletteEntries
+		);
+		
+		// Colormaps
+		iwad->wadEntryAddIfFound(
+			["COLORMAP", "TINTTAB",  "FOGMAP", 
+			 "TRANTBL0", "TRANTBL1", "TRANTBL2", "TRANTBL3", 
+			 "TRANTBL4", "TRANTBL5", "TRANTBL6", "TRANTBL7", 
+			 "TRANTBL8", "TRANTBL9", "TRANTBLA", "TRANTBLB", 
+			 "TRANTBLC", "TRANTBLD", "TRANTBLE", "TRANTBLF", 
+			 "TRANTBLG", "TRANTBLH", "TRANTBLI", "TRANTBLJ", 
+			 "TRANTBLK" 
+			],
+			colormapEntries
+		);
+		
+		sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/palettes";
+		verifyDirs(sourceDir);
+		palImage = null;
+		each (palEntry : paletteEntries) {
+			img = iwad->exportPaletteToImage(palEntry.name);
+			if (palEntry.name == "PLAYPAL")
+				palImage = img;
+			outFile = sourceDir + "/" + palEntry.name + ".png";
+			if (!fileexists(outFile)) {
+				img->imagewrite(outFile);
+				println("Wrote `" + outFile + "`.");
+			}
+			else {
+				println(outFile + " exists. Skipping rebuild.");
+			}
+		}
+		
+		sourceDir = getSourceDirectory() + SRC_DIR_CONVERT + "/colormaps";
+		verifyDirs(sourceDir);
+		each (colorEntry : colormapEntries) {
+			img = iwad->exportColormapToImage(colorEntry.name, palImage);
+			outFile = sourceDir + "/" + colorEntry.name + ".png";
+			if (!fileexists(outFile)) {
+				img->imagewrite(outFile);
+				println("Wrote `" + outFile + "`.");
+			}
+			else {
+				println(outFile + " exists. Skipping rebuild.");
+			}
+		}
+	}
+	close(iwad);
+	if (err) {
+		return err;
+	}
+}
+/* ------------------------------------------------------------------------ */
+
+#define SRC_DIR_ASSETS     "/assets" 
+#define MERGESCRIPT_ASSETS "scripts/merge-assets.txt"
+
+/**
+ * Cleans up the created asset WAD.
+ */
+check function cleanUpAssetWAD(wadpath) {
+	wf = wadfile(wadpath);
+	
+	// Remove the sprite namespace if empty.
+	sx = wadentryindex(wf, "SS_START");
+	sy = wadentryindex(wf, "SS_END");
+	if (sx !== null && (sy - sx === 1)) {
+		wf->waddelete(wf->wadentryindex("SS_START"));
+		wf->waddelete(wf->wadentryindex("SS_END"));
+	}
+	
+	// Remove the acs namespace if empty.
+	sx = wadentryindex(wf, "A_START");
+	sy = wadentryindex(wf, "A_END");
+	if (sx !== null && (sy - sx === 1)) {
+		wf->waddelete(wf->wadentryindex("A_START"));
+		wf->waddelete(wf->wadentryindex("A_END"));
+	}
+	
+	// Remove the colormap namespace if empty.
+	sx = wadentryindex(wf, "C_START");
+	sy = wadentryindex(wf, "C_END");
+	if (sx !== null && (sy - sx === 1)) {
+		wf->waddelete(wf->wadentryindex("C_START"));
+		wf->waddelete(wf->wadentryindex("C_END"));
+	}
+	
+	close(wf);
+}
+
+/**
+ * Calls the merge script for merging assets.
+ * Creates assets WAD.
+ */
+check function doAssets() {
+	
+	initBuild();
+
+	outWad = getBuildDirectory() + "/" + getAssetsWAD();
+
+	sourceDir = getSourceDirectory() + SRC_DIR_ASSETS;
+	verifydirs(sourceDir + "/_global");
+	verifydirs(sourceDir + "/acslib");
+	verifydirs(sourceDir + "/palettes");
+	verifydirs(sourceDir + "/colormaps");
+	verifydirs(sourceDir + "/colormaps-secondary");
+	verifydirs(sourceDir + "/graphics");
+	verifydirs(sourceDir + "/music");
+	verifydirs(sourceDir + "/sounds");
+	verifydirs(sourceDir + "/sprites");
+		
+	if (checkFileExistenceAndBuildStatuses(outWad, ["convert-sound", "convert-graphics", "convert-sprites", "convert-palettes", "convert-colormaps", "convert-colormaps-secondary"])) {
+		hash = directoryHasChanged(sourceDir);
+		if (hash === null) {
+			println("[Skipped] Assets directory (" + sourceDir + ") up to date.");
+			return;
+		}
+	} else {
+		hash = getDirectoryHash(sourceDir);
+	}
+	
+	println("Building assets...");
+	
+	wadmerge(file(MERGESCRIPT_ASSETS), [
+		getBuildDirectory(),
+		getSourceDirectory(),
+		getAssetsWAD()
+	]);
+	cleanUpAssetWAD(outWad);
+	
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("assets");
+}
+
+
+/* ------------------------------------------------------------------------ */
+
+#define PROP_RUN_EXE            "doommake.run.exe"
+#define PROP_RUN_EXE_WORK       "doommake.run.exe.workdir"
+#define PROP_RUN_SWITCH_IWAD    "doommake.run.switch.iwad"
+#define DEFAULT_RUN_SWITCH_IWAD "-iwad"
+#define PROP_RUN_SWITCH_FILE    "doommake.run.switch.file"
+#define DEFAULT_RUN_SWITCH_FILE "-file"
+#define PROP_RUN_SWITCH_DEH     "doommake.run.switch.deh"
+#define DEFAULT_RUN_SWITCH_DEH  "-deh"
+
+/**
+ * Calls a port to run this project.
+ * portType: If specified, then this looks for the properties that end with ".porttype".
+ * wadList: List of WAD files to add.
+ * dehFile: DEH file to add.
+ */
+check function doRun(portType, wadList, dehFile, args) {
+
+	iwadPath = getIwad();
+	if (empty(iwadPath))
+		return error("NoIWAD", "An IWAD for this project was not set in properties: " + PROP_IWADPATH);
+
+	portType = empty(portType) ? "" : "." + portType;
+
+	exepath =    prop(PROP_RUN_EXE + portType);
+	exeworkdir = prop(PROP_RUN_EXE_WORK + portType) ?: fileparent(exepath);
+	iwadSwitch = prop(PROP_RUN_SWITCH_IWAD + portType, DEFAULT_RUN_SWITCH_IWAD);
+	fileSwitch = prop(PROP_RUN_SWITCH_FILE + portType, DEFAULT_RUN_SWITCH_FILE);
+	dehSwitch =  prop(PROP_RUN_SWITCH_DEH + portType, DEFAULT_RUN_SWITCH_DEH);
+	
+	if (empty(exepath))
+		return error("NoEXE", "Executable not specified. Requires a property to be set: " + PROP_RUN_EXE + portType);
+	
+	if (!fileexists(exepath))
+		return error("NoEXE", "Executable could not be found: " + exepath);
+	if (!fileexists(exeworkdir))
+		return error("NoEXE", "Working directory for executable not found: " + exeworkdir);
+
+	if (empty(iwadSwitch))
+		return error("RunError", "IWAD switch not specified. Requires a property to be set: " + PROP_RUN_SWITCH_IWAD + portType);
+	if (empty(fileSwitch))
+		return error("RunError", "FILE switch not specified. Requires a property to be set: " + PROP_RUN_SWITCH_FILE + portType);
+	if (empty(dehSwitch))
+		return error("RunError", "DEH switch not specified. Requires a property to be set: " + PROP_RUN_SWITCH_DEH + portType);
+
+	arguments = [];
+
+	arguments->listadd(iwadSwitch);
+	arguments->listadd(iwadPath->filecanonpath());
+
+	if (!empty(wadList)) {
+		arguments->listadd(fileSwitch);
+		each (w : wadList)
+			arguments->listadd(w->filecanonpath());
+	}
+
+	if (!empty(dehFile)) {
+		arguments->listadd(dehSwitch);
+		arguments->listadd(dehFile->filecanonpath());
+	}
+	
+	if (args) each (a : args) {
+		arguments->listadd(a);
+	}
+	
+	return execresult(exec(
+		exepath, arguments, envvars(), exeworkdir, stdout(), stderr(), stdin()
+	));
+}
+
+/* ------------------------------------------------------------------------ */
+
+check function runCommon(args)
+{
+	// Must use native separator for args passed to program.
+	fs = prop("file.separator", "/");
+	
+	patchPath     = getBuildDirectory() + fs + getPatchFile();
+	assetsWadPath = getBuildDirectory() + fs + getAssetsWAD();
+	mapsWadPath   = getBuildDirectory() + fs + getMapsWAD();
+	texWadPath    = getBuildDirectory() + fs + getTextureWAD();
+	mapTexWadPath = getBuildDirectory() + fs + getMapTextureWAD();
+
+	wadList = [];
+
+	if (fileexists(assetsWadPath))
+		wadlist->listAdd(assetsWadPath);
+	if (fileexists(mapsWadPath))
+		wadlist->listAdd(mapsWadPath);
+
+	// Run will add either add the reduced texture set from compiled maps 
+	// or the compiled textures WAD. If you want to explicitly use one or the
+	// other, edit the following lines:
+
+	if (fileexists(mapTexWadPath))
+		wadlist->listAdd(mapTexWadPath);
+	else if (fileexists(texWadPath))
+		wadlist->listAdd(texWadPath);
+	
+	// Set DEH file here, if any.
+	dehFile = fileexists(patchPath) ? file(patchPath) : null;
+
+	if (length(args) > 1) {
+		argrest = args->sublist(1);
+	}
+
+	return doRun(args[0], wadList, dehFile, argrest);
+}
+
+/* ------------------------------------------------------------------------ */
+
+#define MERGESCRIPT_RELEASE "scripts/merge-release.txt"
+#define SRC_WADINFO "/wadinfo.txt"
+
+/**
+ * Initializes the build directory.
+ */
+function initDist() {
+	return verifydirs(getDistDirectory());
+}
+
+/**
+ * Copies the WAD info to the build directory as its TXT file.
+ * Throws error if unsuccessful.
+ */
+function copyProjectTXT(destfile) {
+	srcfile = file(getSourceDirectory() + SRC_WADINFO);
+	println("Copying " + srcfile + " to " + destfile + "...");
+	return copyfile(srcfile, destfile, true);
+}
+
+/**
+ * Builds every component for the project release.
+ */
+check function doAll() {
+	initBuild();
+	doConvertPalettes();
+	doConvertColormaps();
+	doConvertGraphics();
+	doConvertSprites();
+	doConvertSounds();
+	doAssets();
+}
+
+/**
+ * Merges all components into the project file and creates the distributable.
+ */
+check function doRelease() {
+
+	sourceDir = getSourceDirectory();
+	outFile = getBuildDirectory() + "/" + getProjectWAD();
+	
+	if (checkFileExistenceAndBuildStatuses(outFile, ["dehacked", "maps", "assets", "maptextures"])) {
+		hash = directoryHasChanged(sourceDir, false); // src root only
+		if (hash === null) {
+			println("[Skipped] No pertinent project data built.");
+			return;
+		}
+	} else {
+		hash = directoryHasChanged(sourceDir, false);
+	}
+	
+	wadmerge(file(MERGESCRIPT_RELEASE), [
+		getBuildDirectory()
+		,getSourceDirectory()
+		,getProjectWad()
+		,getAssetsWAD()
+	]);
+
+	storeDirectoryChanged(sourceDir, hash);
+	setBuilt("release");
+}
+
+/**
+ * Assembles the distributable.
+ */
+check function doDist() {
+
+	sourceDir = getSourceDirectory();
+	projectFile = getBuildDirectory() + "/" + getProjectWAD();
+	outTextFile = getBuildDirectory() + "/" + getProjectTXT();
+	outDistZipFile = getDistDirectory() + "/" + getProjectZip();
+	outDistTextFile = getDistDirectory() + "/" + getProjectTXT();
+
+	if (checkFileExistenceAndBuildStatuses([outTextFile, outDistZipFile, outDistTextFile], "release")) {
+		println("[Skipped] No release rebuilt - no distributable needs building.");
+		return;
+	}
+
+	println("Assembling distributable...");
+	// Assemble project archive.
+	initDist();
+	copyProjectTXT(outTextFile);
+	copyProjectTXT(outDistTextFile);
+	println("Zipping project to " + outDistZipFile + "...");
+	zipfiles(outDistZipFile, [
+		projectFile, 
+		outTextFile
+	]);
+
+	println("Done!");
+}
+
+
+/****************************************************************************
+ * TARGET: init
+ ****************************************************************************
+ * Initializes this project.
+ * doommake init
+ ****************************************************************************/
+check entry init(args) {
+	doInit(args);
+}
+
+
+/****************************************************************************
+ * TARGET: clean
+ ****************************************************************************
+ * Cleans the build directory.
+ * doommake clean
+ ****************************************************************************/
+check entry clean(args) {
+	success = doClean();
+	return success ? 0 : 1;
+}
+
+
+/****************************************************************************
+ * TARGET: editor
+ ****************************************************************************
+ * Rebuilds the editor WAD file.
+ * doommake editor
+ ****************************************************************************/
+check entry editor(args) {
+	doAll();
+	doEditorAssets();
+}
+
+
+/*****************************************************************************
+ * TARGET: convert
+ *****************************************************************************
+ * Converts assets to Doom assets and puts them in the asset directories.
+ * doommake convert
+ ****************************************************************************/
+check entry convert(args) {
+	doConvertPalettes();
+	doConvertColormaps();
+	doConvertSounds();
+	doConvertGraphics();
+	doConvertSprites();
+}
+
+/*****************************************************************************
+ * TARGET: rebuildpalettes
+ *****************************************************************************
+ * Creates a convert-able primary palettes and colormaps for graphic conversion 
+ * in the convert directories.
+ * doommake rebuildpalettes
+ ****************************************************************************/
+check entry rebuildpalettes(args) {
+	doRebuildPalettes();
+}
+
+/*****************************************************************************
+ * TARGET: assets
+ *****************************************************************************
+ * Converts and merges the assets WAD.
+ * doommake assets
+ ****************************************************************************/
+check entry assets(args) {
+	doConvertSounds();
+	doConvertGraphics();
+	doConvertSprites();
+	doConvertColormaps();
+	doAssets();
+}
+
+
+/*****************************************************************************
+ * TARGET: run
+ *****************************************************************************
+ * Runs this project.
+ * doommake run [optional:portname]
+ ****************************************************************************/
+check entry run(args) {
+	doInit(args);
+	doAll();
+	return runCommon(args);	
+}
+
+/*****************************************************************************
+ * TARGET: justrun
+ *****************************************************************************
+ * Runs this project with no pre-build.
+ * doommake justrun [optional:portname]
+ ****************************************************************************/
+check entry justrun(args) {
+	doInit(args);
+	return runCommon(args);	
+}
+
+/****************************************************************************
+ * TARGET: all
+ ****************************************************************************
+ * Builds all parts of the project. 
+ * doommake all
+ ****************************************************************************/
+check entry all(args) {
+	doInit();
+	doAll();
+}
+
+
+/****************************************************************************
+ * TARGET: release
+ ****************************************************************************
+ * Creates a release WAD.
+ * doommake release
+ ****************************************************************************/
+check entry release(args) {
+	doInit();
+	doAll();
+	doRelease();
+}
+
+
+/****************************************************************************
+ * TARGET: make
+ ****************************************************************************
+ * Default make target.
+ * Creates a release and packages up the distribution.
+ * doommake
+ ****************************************************************************/
+check entry make(args) {
+	doInit();
+	doAll();
+	doRelease();
+	doDist();
+}
